@@ -7,6 +7,7 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
+from email.utils import formataddr
 
 def setup_logger(name, verbose=False):
     logger = logging.getLogger(name)
@@ -230,12 +231,17 @@ class Gamemale:
         url = f"https://{self.hostname}/home.php?mod=spacecp&ac=credit&op=base"
         try:
             res = self.session.get(url).text
-            # 匹配常规 Discuz 积分中心的资产项名称与数值
             asset_items = re.findall(r'<li><em>(.*?)[:-]\s*</em>(.*?)<\/li>', res)
             if asset_items:
-                self.assets_report = "\n".join([f"- {name.strip()}: {value.strip()}" for name, value in asset_items if name.strip()])
+                clean_assets = []
+                for name, value in asset_items:
+                    # 使用正则剥离残留的 HTML 标签，只保留纯文本
+                    clean_name = re.sub(r'<[^>]+>', '', name).strip()
+                    clean_value = re.sub(r'<[^>]+>', '', value).strip()
+                    if clean_name:
+                        clean_assets.append(f"- {clean_name}: {clean_value}")
+                self.assets_report = "\n".join(clean_assets)
             else:
-                # 备用匹配机制
                 clean_text = re.sub(r'<[^>]+>', '', res)
                 matches = re.findall(r'(金币|血液|旅程|追随|知识|咒术|堕落|灵魂)\s*[:：]?\s*(\d+)', clean_text)
                 if matches:
@@ -256,12 +262,11 @@ class Gamemale:
         self.task_logger.info(f"互动作业结果: {self.task_result}")
 
     def send_notification(self):
-        # 从环境变量中读取 SMTP 密匙配置
         smtp_host = os.getenv("SMTP_HOST")
         smtp_port = os.getenv("SMTP_PORT", "465")
         mail_user = os.getenv("MAIL_USER")
         mail_pass = os.getenv("MAIL_PASS")
-        mail_to = os.getenv("MAIL_TO", mail_user) # 默认发给自己
+        mail_to = os.getenv("MAIL_TO", mail_user)
         
         if not all([smtp_host, mail_user, mail_pass]):
             self.notice_logger.warning("未配置完整的 SMTP 环境变量，跳过邮件通知流程")
@@ -274,13 +279,15 @@ class Gamemale:
             f"<p><b>日常抽奖:</b> {self.exchange_result}</p>"
             f"<p><b>互动作业:</b> {self.task_result}</p>"
             f"<br><h4>📊 当前实时资产状态：</h4>"
-            f"<pre style='background:#f4f4f4;padding:10px;border-radius:5px;'>{self.assets_report}</pre>"
+            f"<pre style='background:#f4f4f4;padding:10px;border-radius:5px;font-family:monospace;'>{self.assets_report}</pre>"
             f"<br><small style='color:#888;'>报告由 GM-All-In-One 自动化引擎生成</small>"
         )
         
         message = MIMEText(mail_content, 'html', 'utf-8')
-        message['From'] = Header(f"GM-Bot <{mail_user}>", 'utf-8')
-        message['To'] = Header(mail_to, 'utf-8')
+        
+        # [修复重点] 使用 formataddr 规范发送人和接收人头部格式，符合 RFC 协议要求
+        message['From'] = formataddr((Header("GM-Bot", 'utf-8').encode(), mail_user))
+        message['To'] = formataddr((Header("Master", 'utf-8').encode(), mail_to))
         message['Subject'] = Header(f"GameMale 任务运行报告 - {self.sign_result}", 'utf-8')
         
         try:
@@ -308,5 +315,5 @@ if __name__ == "__main__":
     password = os.getenv("PASSWORD")
     if not username or not password:
         exit(1)
-    gm = Gamemale(username, password, verbose=True)
+    gm = Gamemale(username, password, verbose=False)
     gm.run()
