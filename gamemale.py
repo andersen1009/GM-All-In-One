@@ -308,5 +308,5 @@ if __name__ == "__main__":
     password = os.getenv("PASSWORD")
     if not username or not password:
         exit(1)
-    gm = Gamemale(username, password, verbose=False)
+    gm = Gamemale(username, password, verbose=True)
     gm.run()
