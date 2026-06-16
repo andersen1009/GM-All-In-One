@@ -1,41 +1,66 @@
-# GM-All-In-One: GameMale 全自动化任务引擎
+<img width="2460" height="1122" alt="屏幕截图 2026-06-16 205446" src="https://github.com/user-attachments/assets/9cf5b840-8901-49f6-8cc6-f393b2ba6550" /># GM-All-In-One
 
-基于 Python 与 GitHub Actions 构建的 GameMale 论坛零干预自动化打工脚本。在继承前人优秀设计的基础上，对底层 API 接口与正则匹配规则进行了深度重构，并新增了资产监控与邮件推送模块。
+这是一个用于 GameMale 论坛的纯后台自动化挂机脚本。
+配置好之后，它每天会定时帮你完成签到、抽奖、互动等全部日常，并把当天的资产变动（尤其是金币的增减）排版成邮件发给你。
 
-## ✨ 核心特性
+---
 
-* **多维任务全覆盖**：无头纯接口执行基础签到、日常抽奖、串门互访（3次）、打招呼（3次）、日志表态（10次）、你画我猜（免图合规出题）。
-* **动态资产追踪**：任务执行完毕后，自动解析积分中心，生成当前的个人资产清单（金币、血液、灵魂等）。
-* **加密邮件推送**：支持通过标准 SMTP 协议（如 QQ 邮箱、网易邮箱）将每次的执行战报及资产状况推送至指定邮箱。
-* **深度脱敏与隐私防护**：严格依赖 GitHub Secrets 传参。代码原生剥离了所有本地调试型日志及动态会话凭证（如 `formhash`），彻底杜绝跨站脚本提权风险。
+## 🚀 部署教程
 
-## 🤝 致谢与灵感来源
+整个部署过程大概需要 3 分钟，只需要在 GitHub 网页上点几下，不需要你自己有服务器。
 
-本项目的架构与核心逻辑参考并致敬了社区中多位开发者的优秀开源工作：
-1. 最初的 GitHub Actions 自动化部署思路由论坛成员 **@thh866** 提出。
-2. 基础的日志脱敏逻辑及卡片抽奖模块衍生自 **exact-emote-granny/Gizmo** 项目。
+### 第一步：Fork 并隐藏仓库（极其重要）
+1. 点击本页面右上角的 **Fork**，把项目复制到你自己的 GitHub 账号下。
+2. ⚠️ **保护隐私**：Fork 完成后，立刻进入你仓库的 `Settings` -> 左侧选 `General` -> 滑到页面最底部的 `Danger Zone`，点击 **Change visibility**，将仓库改为 **Private（私有）**。
 
-## 🛠️ 部署指南
+### 第二步：获取发件邮箱授权码
+为了让脚本能给你发战报，你需要一个发件邮箱（比如 QQ 邮箱）。
+1. 登录 QQ 邮箱网页版，进入 `设置` -> `账号`。
+2. 往下翻找到 `POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务`。
+3. 开启 **SMTP 服务**，点击“生成授权码”，把弹出的那一串十多位的字母密码**复制保存下来**（不要告诉别人）。
 
-### 一、 仓库基础配置
-1. 点击右上角 **Fork** 本仓库到个人的 GitHub 账号。
-2. **【极度重要】** 前往仓库的 `Settings` -> `General` -> `Danger Zone`，将仓库更改为 **Private (私有)** 以保障最高级别的隐私安全。
-3. （可选）进入 `Settings` -> `Actions` -> `General` -> `Workflow permissions`，修改为 **Read and write permissions**，以便后续配置防休眠脚本。
+### 第三步：填入账号密码配置
+回到你的 GitHub 仓库页面，进入 `Settings` -> 左侧找 `Secrets and variables` -> 点 `Actions`。
+点击绿色的 **New repository secret** 按钮，挨个添加以下 7 个变量：
 
-### 二、 环境变量配置 (Encrypted Secrets)
-前往仓库的 `Settings` -> `Secrets and variables` -> `Actions` -> `New repository secret`，依次添加以下密钥参数：
+| 变量名 (Name) | 填什么 (Secret) |
+| :--- | :--- |
+| `USERNAME` | 你的 GameMale 论坛账号名 |
+| `PASSWORD` | 你的论坛登录密码 |
+| `SMTP_HOST` | `smtp.qq.com` (如果你用的是QQ邮箱) |
+| `SMTP_PORT` | `465` |
+| `MAIL_USER` | 你的发件邮箱（比如 123456@qq.com） |
+| `MAIL_PASS` | **刚才第二步获取的那一串字母授权码** |
+| `MAIL_TO` | 你用来接收报告的邮箱（不填就默认发给上面那个）|
 
-| 密钥名称 | 必填 | 作用描述 | 示例值 |
-| :--- | :--- | :--- | :--- |
-| `USERNAME` | **是** | 论坛登录账号（支持中英文） | `YourUsername` |
-| `PASSWORD` | **是** | 论坛登录密码 | `YourPassword` |
-| `SMTP_HOST` | 否 | 发件邮箱的 SMTP 服务器地址 | `smtp.qq.com` |
-| `SMTP_PORT` | 否 | 发件邮箱的 SSL 加密端口 | `465` |
-| `MAIL_USER` | 否 | 用于发送通知的邮箱账户 | `example@qq.com` |
-| `MAIL_PASS` | 否 | 邮箱开通 SMTP 后获得的授权码 | `xxxxccccvvvvbbbb` |
-| `MAIL_TO` | 否 | 接收报告的个人邮箱（不填则默认发给自己）| `receive@gmail.com` |
+### 第四步：给脚本开放写入权限（防断签）
+为了让脚本能把每天的金币数量保存下来做对比，以及防止 GitHub 自动休眠你的任务，必须开放权限。
+1. 进入 `Settings` -> 左侧选 `Actions` -> 点 `General`。
+2. 滑到最底部的 `Workflow permissions`，选中 **Read and write permissions**。
+3. 点击 **Save** 保存。
 
-### 三、 激活并运行
-1. 进入 `Actions` 选项卡，点击绿色的 `I understand my workflows, go ahead and enable them`。
-2. 在左侧选中 `GameMale Auto Sign-in`，点击右侧的 **Run workflow** 手动触发首次运行。
-3. 检查运行日志与收件箱，确认部署无误即可享受每天的自动化服务。
+### 第五步：一键激活运行
+1. 点击仓库顶部的 **Actions** 选项卡。
+2. 如果看到提示，点击绿色的 `I understand my workflows, go ahead and enable them` 允许运行。
+3. 在左侧菜单点击 `GameMale Auto Sign-in`。
+4. 点击右侧灰色的 **Run workflow** 手动触发第一次运行。
+5. 等待大概几十秒，看到绿色的打勾，就可以去邮箱查收你的第一份资产看板了！以后每天它都会在云端自动打卡。
+
+---
+
+## ✨ 它到底能干什么？ (功能特性)
+
+本脚本全面摒弃了模拟浏览器的慢速方案，所有操作直接对接论坛底层 API，执行速度极快且稳定：
+* **全日常覆盖**：自动执行基础签到、插件抽奖、空间串门(3次)、打招呼(3次)、日志吃瓜表态(10次)。
+* **你画我猜 API 化**：通过提交极简的隐形像素图，实现 100% 纯后台静默出题，绕过前端验证限制。
+* **资产看板与对比**：每次运行后剥离干扰代码，精准抓取金币、血液、灵魂等硬通货。自动对比昨日数据，算出金币涨幅。
+* **高安全性**：代码已做深度脱敏，所有动态 Token（如 formhash）阅后即焚，绝不打印在日志中。
+* **自带防休眠**：内置保活工作流，每月自动更新时间戳，破解 GitHub 连续 60 天无活动自动暂停 Actions 的限制。
+
+---
+
+## 🤝 致谢
+
+本项目的诞生离不开社区前辈的开源精神，核心逻辑与灵感参考了以下开发者的工作：
+* 特别感谢 **@thh866** 提供的最初 Actions 自动化触发流与部署思路。
+* 感谢 **exact-emote-granny/Gizmo** 项目在日志隐私脱敏策略以及日常抽奖模块上的启发。
