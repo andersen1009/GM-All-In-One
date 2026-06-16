@@ -299,14 +299,16 @@ class Gamemale:
         self.task_logger.info(f"互动作业结果: {self.task_result}")
 
     def send_notification(self):
-        smtp_host = os.getenv("SMTP_HOST")
-        smtp_port = 465  # 【修改处】已直接写死为 465 端口
+        # 【终极修改】直接把发件服务器和端口写死！彻底绕过 GitHub Secrets 的拼写坑
+        smtp_host = "smtp.qq.com"  
+        smtp_port = 465  
+        
         mail_user = os.getenv("MAIL_USER")
         mail_pass = os.getenv("MAIL_PASS")
         mail_to = os.getenv("MAIL_TO", mail_user)
         
-        if not all([smtp_host, mail_user, mail_pass]):
-            self.notice_logger.warning("未配置完整的 SMTP 环境变量，跳过邮件通知流程")
+        if not all([mail_user, mail_pass]):
+            self.notice_logger.warning("未配置完整的发件人邮箱或授权码，跳过邮件通知流程")
             return
             
         self.notice_logger.info("正在发送推送邮件...")
