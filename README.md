@@ -33,11 +33,24 @@
 | :--- | :--- |
 | `USERNAME` | 你的 GameMale 论坛账号名 |
 | `PASSWORD` | 你的论坛登录密码 |
-| `SMTP_HOST` | `smtp.qq.com` (如果你用的是QQ邮箱) |
+| `SMTP_HOST` | 填入你发件邮箱对应的服务器地址（**参考下方对照表**） |
 | `MAIL_USER` | 你的发件邮箱（比如 123456@qq.com） |
 | `MAIL_PASS` | **刚才第二步获取的那一串字母授权码** |
 
-*(注：如果你想把报告发给别的邮箱，可以再额外添加一个 `MAIL_TO` 变量填入接收邮箱。如果不填，则默认发给自己。)*
+*(注：如果你想把报告发给别的邮箱，可以额外添加一个 `MAIL_TO` 变量填入接收方的邮箱。如果不填，则默认发给自己。)*
+
+#### 💡 附：常用邮箱 `SMTP_HOST` 对照表
+脚本默认使用安全的 465 加密端口，请根据你的发件邮箱类型，直接复制下方对应的服务器地址填入 `SMTP_HOST`：
+
+| 邮箱类型 | 对应的 `SMTP_HOST` 地址 |
+| :--- | :--- |
+| **QQ 邮箱** | `smtp.qq.com` |
+| **网易 163 邮箱** | `smtp.163.com` |
+| **网易 126 邮箱** | `smtp.126.com` |
+| **新浪邮箱** | `smtp.sina.com` |
+| **Foxmail** | `smtp.foxmail.com` |
+| **Gmail (谷歌邮箱)** | `smtp.gmail.com` |
+| **阿里云邮箱** | `smtp.aliyun.com` |
 <img width="2542" height="1506" alt="屏幕截图 2026-06-16 232923" src="https://github.com/user-attachments/assets/61073840-fe14-4862-b2b2-979154640bf5" />
 
 
