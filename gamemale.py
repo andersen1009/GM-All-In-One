@@ -299,19 +299,22 @@ class Gamemale:
         self.task_logger.info(f"互动作业结果: {self.task_result}")
 
     def send_notification(self):
-        # 【终极修改】直接把发件服务器和端口写死！彻底绕过 GitHub Secrets 的拼写坑
         smtp_host = "smtp.qq.com"  
         smtp_port = 465  
         
         mail_user = os.getenv("MAIL_USER")
         mail_pass = os.getenv("MAIL_PASS")
-        mail_to = os.getenv("MAIL_TO", mail_user)
         
+        # 【终极修复】应对 GitHub Actions 传空字符串的坑
+        mail_to = os.getenv("MAIL_TO")
+        if not mail_to or mail_to.strip() == "":
+            mail_to = mail_user
+            
         if not all([mail_user, mail_pass]):
             self.notice_logger.warning("未配置完整的发件人邮箱或授权码，跳过邮件通知流程")
             return
             
-        self.notice_logger.info("正在发送推送邮件...")
+        self.notice_logger.info(f"正在发送推送邮件至: {mail_to} ...")
         mail_content = (
             f"<h3>GameMale 每日自动化任务报告</h3>"
             f"<p><b>核心签到:</b> {self.sign_result}</p>"
@@ -334,10 +337,9 @@ class Gamemale:
             server.login(mail_user, mail_pass)
             server.sendmail(mail_user, [mail_to], message.as_string())
             server.quit()
-            self.notice_logger.info("推送邮件发送成功")
+            self.notice_logger.info("推送邮件发送成功！")
         except Exception as e:
             self.notice_logger.error(f"推送邮件发送失败: {e}")
-
     def run(self):
         self.main_logger.info("=== GM-All-In-One 任务引擎启动 ===")
         if not self.login():
